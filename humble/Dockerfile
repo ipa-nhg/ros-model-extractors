@@ -7,25 +7,27 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 RUN apt-get update && apt upgrade -y && apt-get install -y \
     cppcheck \
     cccc \
-    clang-11 \
+    clang-14 \
     git \
-    libclang-11-dev \
+    libclang-14-dev \
     python3-pip \
-    llvm-11-dev \
+    llvm-14-dev \
     wget \
     netbase \
     libmagic-dev \
-    python-is-python3
+    python-is-python3 \
+    build-essential \
+    clang-format-14
 
 RUN if [ $enable_ssh ] ; then apt-get install -y openssh-server ; fi
 
-ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/lib/llvm-11/lib
+ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/lib/llvm-14/lib
 
 RUN pip3 install --upgrade pip
-RUN pip3 install -Iv clang==11.0
+RUN pip3 install -Iv clang==14.0.0
 RUN pip3 install -e git+https://github.com/timtadh/pyflwor.git#egg=pyflwor
 RUN pip3 install -e git+https://github.com/ipa320/ros_model_parser.git#egg=ros_model_parser
-RUN pip3 install -e git+https://github.com/git-afsantos/bonsai#egg=bonsai-code
+RUN pip3 install -e git+https://github.com/ipa-nhg/bonsai@UpdateClang#egg=bonsai-code
 RUN pip3 install -e git+https://github.com/ipa-nhg/haros@FixPythonExtractTopic#egg=haros
 # RUN pip3 install -e git+https://github.com/git-afsantos/haros#egg=haros
 
@@ -60,10 +62,10 @@ RUN if [ $enable_ssh ] ; then  cat /keys/config >> /home/extractor/.ssh/config ;
 ####
 USER extractor
 
-ENV CMAKE_CXX_COMPILER /usr/lib/llvm-11/bin/clang++
+ENV CMAKE_CXX_COMPILER /usr/lib/llvm-14/bin/clang++
 RUN source /opt/ros/$ROS_DISTRO/setup.bash;\
  cd /home/extractor/ws;\
- colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ;\
+ colcon build --cmake-args -DCMAKE_CXX_STANDARD=17 -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ;\
  source /home/extractor/ws/install/setup.bash; \
  haros init
 
@@ -76,6 +78,7 @@ COPY ${path_to_scripts}generate_messages_model_helper.sh /
 COPY ${path_to_scripts}haros_runner.sh /
 COPY ${path_to_scripts}ros_model_extractor.py /
 COPY ${path_to_scripts}test.sh /
+COPY ${path_to_scripts}clangDebug.py /
 
 EXPOSE 4005
 #CMD sudo chown -R extractor:extractor /home/extractor/results

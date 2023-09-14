@@ -43,8 +43,9 @@ then
   elif [[ $ROS_VERSION == "2" ]]
   then
     source install/setup.bash
+    rosdep update
     rosdep install -y -i -r --from-path src
-    colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    colcon build --cmake-args -DCMAKE_CXX_STANDARD=17 -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
     source ${5}/install/setup.bash
     colcon list > /tmp/colcon_list.txt
     path_to_src_code=$(cat /tmp/colcon_list.txt |  grep "^$1" | awk '{ print $2}')
@@ -87,8 +88,10 @@ then
     if [ "${2}" = "--all" ]
     then
       python3 /ros_model_extractor.py --package "$1" --"${3}" --model-path "${4}" --ws "${5}" --path-to-src "$path_to_src_code" --repo $model_repo -a >> extractor.log
+      python3 /clangDebug.py >> extractor.log
     else
       python3 /ros_model_extractor.py --package "$1" --name "$2" --"${3}" --model-path "${4}" --ws "${5}" --path-to-src "$path_to_src_code" --repo $model_repo>> extractor.log
+      python3 /clangDebug.py >> extractor.log
     fi
     #cat extractor.log 
   else
@@ -116,6 +119,12 @@ echo ""
 echo "~~~~~~~~~~~"
 echo "###########"
 done
+
+#echo "Extraction finished. Print the compile comands:"
+#cat build/compile_commands.json
+echo "~~~~~~~~~~~"
+
+g++ --version
 
 ## Clean and finish
 rm -rf ${5}/src/*
